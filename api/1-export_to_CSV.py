@@ -1,27 +1,35 @@
 #!/usr/bin/python3
-"""script to export data in the CSV format."""
+"""Module that fetches data and exports it in csv format"""
+import json
+from sys import argv
+import urllib.request
 
-if __name__ == "__main__":
-    import csv
-    import requests
-    import sys
 
-    id = int(sys.argv[1])
-    base_url = "https://jsonplaceholder.typicode.com/users/"
-    url_user = "{:s}{:d}".format(base_url, id)
-    url_todos = "{:s}{:d}/todos".format(base_url, id)
+# First we get the name of the employee
+url = "https://jsonplaceholder.typicode.com/users/"
+webURL = urllib.request.urlopen(url)
+data = webURL.read()
+JSON_object = json.loads(data.decode('utf-8'))
 
-    response_user = requests.get(url_user).json()
+username = JSON_object[int(argv[1]) - 1]["username"]
 
-    response_todos = requests.get(url_todos).json()
+# Then we fetch the tasks
+url = "https://jsonplaceholder.typicode.com/users/{}/todos".format(argv[1])
+webURL = urllib.request.urlopen(url)
+data = webURL.read()
 
-    with open('./{}.csv'.format(id), 'w', encoding="UTF-8") as f:
-        writer = csv.writer(f, quoting=csv.QUOTE_ALL)
-        for member in response_todos:
-            user_id = id
-            username = response_user.get("username")
-            task_completed_status = member.get("completed")
-            task_title = member.get("title")
-            final_array = [user_id, username, task_completed_status,
-                           task_title]
-            writer.writerow(final_array)
+tasks = json.loads(data.decode('utf-8'))
+
+text = ""
+i = 0
+for task in tasks:
+    i += 1
+
+    text += "\"{}\",\"{}\",\"{}\",\"{}\"".format(
+    argv[1], username, task["completed"], task["title"]
+    )
+    if i != len(tasks):
+        text += "\n"
+
+with open("{}.csv".format(argv[1]), "w") as f:
+    f.write(text)
