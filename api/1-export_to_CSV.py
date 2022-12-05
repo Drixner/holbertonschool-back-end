@@ -1,35 +1,31 @@
 #!/usr/bin/python3
-"""Module that fetches data and exports it in csv format"""
-import json
+''' Export data in the CSV format '''
+import csv
+import requests
 from sys import argv
-import urllib.request
 
 
-# First we get the name of the employee
-url = "https://jsonplaceholder.typicode.com/users/"
-webURL = urllib.request.urlopen(url)
-data = webURL.read()
-JSON_object = json.loads(data.decode('utf-8'))
+def get_api():
+    ''' Gather data from an API '''
+    url = 'https://jsonplaceholder.typicode.com/'
+    uid = argv[1]
 
-username = JSON_object[int(argv[1]) - 1]["username"]
+    # get a specific user from users in jsonplaceholder
+    usr = requests.get(url + 'users/{}'.format(uid)).json()
+    # make a query string to get tasks based on user id
+    todo = requests.get(url + 'todos', params={'userId': uid}).json()
 
-# Then we fetch the tasks
-url = "https://jsonplaceholder.typicode.com/users/{}/todos".format(argv[1])
-webURL = urllib.request.urlopen(url)
-data = webURL.read()
+    with open('{}.csv'.format(uid), 'w') as file:
+        writer = csv.writer(file, quoting=csv.QUOTE_ALL)
+        for employee in todo:
+            user_id = uid
+            username = usr.get('username')
+            task_comp = employee.get('completed')
+            task_title = employee.get('title')
 
-tasks = json.loads(data.decode('utf-8'))
+            emp_record = [user_id, username, task_comp, task_title]
+            writer.writerow(emp_record)
 
-text = ""
-i = 0
-for task in tasks:
-    i += 1
 
-    text += "\"{}\",\"{}\",\"{}\",\"{}\"".format(
-    argv[1], username, task["completed"], task["title"]
-    )
-    if i != len(tasks):
-        text += "\n"
-
-with open("{}.csv".format(argv[1]), "w") as f:
-    f.write(text)
+if __name__ == '__main__':
+    get_api()
